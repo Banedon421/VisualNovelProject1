@@ -1,0 +1,15 @@
+{
+  "sceneId": "village_intro",
+  "background": "ashford_village",
+  "inkFile": "main.json",
+  "dialogueLayout": "default_dialogue_layout.json",
+  "characters": [
+    {
+      "id": "dupont",
+      "displayName": "Dupont",
+      "sprite": "dupont_neutral",
+      "position": { "x": -400, "y": -100 },
+      "size": { "width": 500, "height": 900 }
+    }
+  ]
+}

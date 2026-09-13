@@ -1,0 +1,22 @@
+{
+  "sceneId": "town_square",
+  "background": "town_square",
+  "inkFile": "town_square.json",
+  "dialogueLayout": "default_dialogue_layout.json",
+  "characters": [
+    {
+      "id": "dupont",
+      "displayName": "Dupont",
+      "sprite": "dupont_neutral",
+      "position": { "x": -350, "y": -80 },
+      "size": { "width": 480, "height": 860 }
+    },
+    {
+      "id": "jeanne",
+      "displayName": "Jeanne",
+      "sprite": "jeanne_neutral",
+      "position": { "x": 350, "y": -80 },
+      "size": { "width": 480, "height": 860 }
+    }
+  ]
+}
