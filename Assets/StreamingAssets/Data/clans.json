@@ -1,0 +1,16 @@
+[
+  {
+    "id": "grue",
+    "displayName": "Crane Clan",
+    "description": "Artisans and diplomats, valuing grace and trade.",
+    "traits": ["diplomatic", "artisan"],
+    "startingStatModifiers": { "production": 5, "stability": 0 }
+  },
+  {
+    "id": "crabe",
+    "displayName": "Crab Clan",
+    "description": "Hardened defenders of the coast, blunt and dutiful.",
+    "traits": ["resilient", "blunt"],
+    "startingStatModifiers": { "militarySupport": 5, "production": -2 }
+  }
+]

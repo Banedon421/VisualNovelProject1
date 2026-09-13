@@ -1,0 +1,5 @@
+[
+  { "id": "army", "displayName": "Army", "description": "The military chain of command." },
+  { "id": "administration", "displayName": "Administration", "description": "Bureaucrats, judges, and tax collectors." },
+  { "id": "production", "displayName": "Production Chain", "description": "Guilds, farmers, and merchants." }
+]

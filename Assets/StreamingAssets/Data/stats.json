@@ -1,0 +1,6 @@
+[
+  { "id": "stability", "displayName": "Stability", "minValue": 0, "maxValue": 100, "defaultValue": 50 },
+  { "id": "militarySupport", "displayName": "Military Support", "minValue": 0, "maxValue": 100, "defaultValue": 50 },
+  { "id": "production", "displayName": "Production", "minValue": 0, "maxValue": 100, "defaultValue": 50 },
+  { "id": "morale", "displayName": "Morale", "minValue": 0, "maxValue": 100, "defaultValue": 50 }
+]

@@ -1,0 +1,4 @@
+[
+  { "id": "dupont", "role": "blacksmith", "baseName": "Dupont" },
+  { "id": "jeanne", "role": "farmer", "baseName": "Jeanne" }
+]
