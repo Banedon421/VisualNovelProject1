@@ -25,9 +25,19 @@ public class MagicState
 
     public void Restore(List<string> talented, Dictionary<string, float> costs)
     {
+        // See StatSystem.Restore for why these guards are here -- a
+        // missing field in a save file deserializes to null, not an
+        // empty collection, for either parameter independently.
         _talented.Clear();
-        foreach (var t in talented) _talented.Add(t);
+        if (talented != null)
+        {
+            foreach (var t in talented) _talented.Add(t);
+        }
+
         _accumulatedCost.Clear();
-        foreach (var kv in costs) _accumulatedCost[kv.Key] = kv.Value;
+        if (costs != null)
+        {
+            foreach (var kv in costs) _accumulatedCost[kv.Key] = kv.Value;
+        }
     }
 }

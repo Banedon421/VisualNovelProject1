@@ -57,6 +57,12 @@ public class StatSystem
 
     public void Restore(Dictionary<string, float> snapshot)
     {
+        // Guards against a save file where this field is missing/null
+        // (hand-edited, partially written, or migrated from an older
+        // format) -- without this, a null here would throw on the
+        // foreach below instead of just leaving stats at their defaults.
+        if (snapshot == null) return;
+
         foreach (var kv in snapshot)
         {
             if (_values.ContainsKey(kv.Key)) _values[kv.Key] = kv.Value;

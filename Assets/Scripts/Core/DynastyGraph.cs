@@ -72,6 +72,10 @@ public class DynastyGraph
 
     public void Restore(List<FamilyMember> members)
     {
+        // See StatSystem.Restore for why this guard is here -- a missing
+        // field in a save file deserializes to null, not an empty list.
+        if (members == null) return;
+
         _members.Clear();
         foreach (var m in members) _members[m.id] = m;
     }

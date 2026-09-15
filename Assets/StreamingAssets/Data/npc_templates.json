@@ -1,4 +1,4 @@
 [
-  { "id": "dupont", "role": "blacksmith", "baseName": "Dupont" },
-  { "id": "jeanne", "role": "farmer", "baseName": "Jeanne" }
+  { "id": "dupont", "role": "blacksmith", "baseName": "Dupont", "defaultSprite": "dupont_neutral" },
+  { "id": "jeanne", "role": "farmer", "baseName": "Jeanne", "defaultSprite": "jeanne_neutral" }
 ]

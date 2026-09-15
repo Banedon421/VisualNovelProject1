@@ -39,13 +39,15 @@ public class GameBootstrapper : MonoBehaviour
 
     void Start()
     {
+        var database = GameDatabase.LoadFromStreamingAssets();
+
         var sceneDefinition = LoadJsonFromStreamingAssets<SceneDefinition>(ScenesFolder, sceneDefinitionFileName);
         if (sceneDefinition == null) return;
 
         ApplyBackground(sceneDefinition.background);
-        ApplyCharacters(sceneDefinition.characters);
+        ApplyCharacters(sceneDefinition.characters, database);
         ApplyDialogueLayout(sceneDefinition.dialogueLayout);
-        RunInk(sceneDefinition.inkFile);
+        RunInk(sceneDefinition.inkFile, database);
     }
 
     private void ApplyBackground(string spriteName)
@@ -66,7 +68,7 @@ public class GameBootstrapper : MonoBehaviour
         backgroundImage.sprite = sprite;
     }
 
-    private void ApplyCharacters(List<CharacterPlacement> characters)
+    private void ApplyCharacters(List<CharacterPlacement> characters, GameDatabase database)
     {
         if (charactersContainer == null || characterPrefab == null)
         {
@@ -94,10 +96,26 @@ public class GameBootstrapper : MonoBehaviour
             rect.anchoredPosition = placement.position.ToVector2();
             rect.sizeDelta = placement.size.ToVector2();
 
-            var sprite = Resources.Load<Sprite>("Portraits/" + placement.sprite);
+            // Fall back to this character's npc_templates.json entry for
+            // anything the scene didn't specify itself -- keeps a recurring
+            // character's name/default look from being repeated in every
+            // scene file they appear in.
+            var template = database.NpcTemplates?.Find(t => t.id == placement.id);
+
+            string displayName = !string.IsNullOrEmpty(placement.displayName)
+                ? placement.displayName
+                : template?.baseName;
+
+            string spriteName = !string.IsNullOrEmpty(placement.sprite)
+                ? placement.sprite
+                : template?.defaultSprite;
+
+            var sprite = string.IsNullOrEmpty(spriteName) ? null : Resources.Load<Sprite>("Portraits/" + spriteName);
             if (sprite == null)
             {
-                Debug.LogError($"GameBootstrapper: no portrait sprite found at Resources/Portraits/{placement.sprite}");
+                Debug.LogError($"GameBootstrapper: no portrait sprite found for character '{placement.id}' " +
+                                $"(tried Resources/Portraits/{spriteName}). Check the scene JSON's \"sprite\" " +
+                                "field or this character's npc_templates.json entry.");
             }
             else
             {
@@ -106,7 +124,7 @@ public class GameBootstrapper : MonoBehaviour
 
             var view = instance.gameObject.AddComponent<CharacterView>();
             view.characterId = placement.id;
-            view.displayName = placement.displayName;
+            view.displayName = displayName;
             view.portraitImage = instance;
         }
     }
@@ -119,7 +137,7 @@ public class GameBootstrapper : MonoBehaviour
         if (layout != null) dialogueUI.ApplyLayout(layout);
     }
 
-    private void RunInk(string inkFileName)
+    private void RunInk(string inkFileName, GameDatabase database)
     {
         if (string.IsNullOrEmpty(inkFileName))
         {
@@ -141,7 +159,6 @@ public class GameBootstrapper : MonoBehaviour
 
         string inkJson = File.ReadAllText(path);
 
-        var database = GameDatabase.LoadFromStreamingAssets();
         var player = new PlayerProfile
         {
             characterName = testCharacterName,
@@ -153,9 +170,29 @@ public class GameBootstrapper : MonoBehaviour
         var world = new WorldState(database, player, startYear: 1200);
         var story = new Story(inkJson);
 
+        // Destroy first, in case this scene is being (re)loaded rather than
+        // started fresh -- otherwise repeated calls stack a new InkBinder
+        // on top of old ones without removing them. Not reachable yet
+        // (Start() only runs once today), but this is exactly the kind of
+        // thing that bites silently once scene-switching exists, so it's
+        // handled now rather than left as a trap for later.
+        var existingBinder = GetComponent<InkBinder>();
+        if (existingBinder != null) Destroy(existingBinder);
+
         var binder = gameObject.AddComponent<InkBinder>();
         binder.World = world;
         binder.Bind(story);
+
+        try
+        {
+            story.ValidateExternalBindings();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("GameBootstrapper: ink external function bindings are incomplete or " +
+                            $"mismatched with InkBinder.cs -- {e.Message}");
+            return;
+        }
 
         dialogueUI.Bind(story);
     }

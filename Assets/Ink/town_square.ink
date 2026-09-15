@@ -63,10 +63,12 @@ Jeanne: "The forge is buying less iron ore than it used to. Dupont says it's the
 
 * [Offer to look into the grain situation] -> offer_help
 * [Say it's not your place to get involved] -> stay_out
--> square_choices
 
 === harvest_check ===
-~ add_relationship("npc:jeanne", 1)
+{ not has_flag("harvest_checked"):
+    ~ add_relationship("npc:jeanne", 1)
+    ~ set_flag("harvest_checked")
+}
 
 { get_stat("production") < 30:
     Jeanne: "Thin. Thinner than I'd like to admit in front of Dupont." # speaker:jeanne

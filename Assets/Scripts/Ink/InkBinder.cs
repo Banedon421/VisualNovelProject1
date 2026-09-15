@@ -5,7 +5,12 @@ using UnityEngine;
 // function declared in main.ink must have a matching binding here, with a
 // matching name and parameter count/order. If you add a new EXTERNAL line
 // in ink, add its binding here too -- the two files have to stay in sync
-// by hand, there's no automatic check for that yet.
+// by hand, there's no automatic check for that at the point of writing
+// either file. GameBootstrapper does call story.ValidateExternalBindings()
+// right after Bind() runs, though, which throws immediately (with a clear
+// message naming the missing function) if the two ever drift apart --
+// that's the actual safety net, this comment is just a reminder while
+// you're editing.
 public class InkBinder : MonoBehaviour
 {
     public WorldState World;
@@ -20,7 +25,11 @@ public class InkBinder : MonoBehaviour
 
         story.BindExternalFunction("get_clan", () => World.Player.clanId);
         story.BindExternalFunction("get_pole", () => World.Player.currentPoleId);
-        story.BindExternalFunction("set_pole", (string poleId) => World.Player.currentPoleId = poleId);
+        // Routed through WorldState.SetPole rather than assigning directly,
+        // so a pole id ink sends that doesn't match poles.json gets a
+        // loud warning instead of silently making every get_pole()
+        // comparison fall through to "else" with no clue why.
+        story.BindExternalFunction("set_pole", (string poleId) => World.SetPole(poleId));
 
         story.BindExternalFunction("has_flag", (string flagId) => World.History.HasFlag(flagId));
         story.BindExternalFunction("set_flag", (string flagId) => World.History.SetFlag(flagId));

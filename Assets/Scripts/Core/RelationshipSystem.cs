@@ -25,6 +25,10 @@ public class RelationshipSystem
 
     public void Restore(Dictionary<string, float> snapshot)
     {
+        // See StatSystem.Restore for why this guard is here -- a missing
+        // field in a save file deserializes to null, not an empty dict.
+        if (snapshot == null) return;
+
         _values.Clear();
         foreach (var kv in snapshot) _values[kv.Key] = kv.Value;
     }

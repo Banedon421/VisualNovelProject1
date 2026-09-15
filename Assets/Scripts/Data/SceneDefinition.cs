@@ -21,12 +21,11 @@ public class SizeData
     public Vector2 ToVector2() => new Vector2(width, height);
 }
 
-// One character's placement in a given scene. "sprite" is a name, not a
-// path -- it's looked up under Resources/Portraits/ at runtime (see
-// GameBootstrapper). Anything about a character that might need to change
-// mid-scene later (mood, outfit, position) belongs on a class like this
-// one, since it's already the single place that describes "what's true
-// about this character right now."
+// One character's placement in a given scene. "displayName" and "sprite"
+// are optional overrides -- if left out, GameBootstrapper falls back to
+// the matching NpcTemplateDefinition (looked up by "id") from
+// npc_templates.json, so a recurring character's name/default look isn't
+// repeated in every scene file that uses them.
 [Serializable]
 public class CharacterPlacement
 {

@@ -31,9 +31,19 @@ public class HistoryLog
 
     public void Restore(List<string> flags, List<HistoryEvent> events)
     {
+        // See StatSystem.Restore for why these guards are here -- a
+        // missing field in a save file deserializes to null, not an
+        // empty list, for either parameter independently.
         _flags.Clear();
-        foreach (var f in flags) _flags.Add(f);
+        if (flags != null)
+        {
+            foreach (var f in flags) _flags.Add(f);
+        }
+
         _events.Clear();
-        _events.AddRange(events);
+        if (events != null)
+        {
+            _events.AddRange(events);
+        }
     }
 }

@@ -25,10 +25,18 @@ public class PoleDefinition
     public string description;
 }
 
+// A recurring NPC's base identity, independent of any one scene. Used as a
+// fallback by GameBootstrapper: if a scene's CharacterPlacement doesn't
+// specify displayName/sprite for this id, these values are used instead --
+// so "Dupont is called Dupont and defaults to his neutral portrait" only
+// needs to be said once, not repeated in every scene file he appears in.
+// A scene can still override either field (e.g. a mood-specific sprite for
+// one particular beat) by simply specifying it directly.
 [Serializable]
 public class NpcTemplateDefinition
 {
     public string id;
-    public string role;      // e.g. "blacksmith", "farmer"
-    public string baseName;  // fallback name if no clan-specific variant is written
+    public string role;         // e.g. "blacksmith", "farmer"
+    public string baseName;     // fallback for CharacterPlacement.displayName
+    public string defaultSprite; // fallback for CharacterPlacement.sprite
 }
