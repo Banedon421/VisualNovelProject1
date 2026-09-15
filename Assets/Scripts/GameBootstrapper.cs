@@ -13,6 +13,18 @@ using Ink.Runtime;
 // ordinary content changes, only when a wholly new KIND of element is
 // introduced (e.g. a music cue) that this script doesn't know how to read
 // yet.
+//
+// IMPORTANT -- Reference Resolution: any scene JSON using legacy pixel
+// "position"/"size" for characters (see CharacterPlacement in
+// SceneDefinition.cs) assumes a specific CanvasScaler Reference
+// Resolution. Changing that value in the Inspector re-interprets those
+// same pixel numbers against a different design canvas and will make
+// portraits/text look wrong -- it is not a bug, it's exactly what
+// "Scale With Screen Size" is supposed to do. Set Reference Resolution
+// once (this project currently assumes 1920x1080) and leave it alone;
+// simulate different screens by resizing the Game view or using Device
+// Simulator instead. New scenes using the normalized "anchor" field are
+// not sensitive to this.
 public class GameBootstrapper : MonoBehaviour
 {
     [Header("Scene definition")]
@@ -47,6 +59,15 @@ public class GameBootstrapper : MonoBehaviour
         ApplyBackground(sceneDefinition.background);
         ApplyCharacters(sceneDefinition.characters, database);
         ApplyDialogueLayout(sceneDefinition.dialogueLayout);
+
+        // Single source of truth for "where are the on-screen portraits" --
+        // wired here in code rather than duplicating the same RectTransform
+        // reference in two separate Inspector fields, so
+        // DialogueUIController can find/dim portraits by id for the
+        // #speaker: highlight without you having to remember to keep two
+        // Inspector slots in sync.
+        if (dialogueUI != null) dialogueUI.charactersContainer = charactersContainer;
+
         RunInk(sceneDefinition.inkFile, database);
     }
 
@@ -86,15 +107,46 @@ public class GameBootstrapper : MonoBehaviour
 
         if (characters == null) return;
 
+        // charactersContainer is stretched full-screen (anchors 0,0 to
+        // 1,1), so by the time we read its rect here, it already reflects
+        // whatever aspect ratio Canvas Scaler resolved to on this screen --
+        // that's what makes sizeNormalized below aspect-correct without any
+        // extra math.
+        Rect containerRect = charactersContainer.rect;
+
         foreach (var placement in characters)
         {
             var instance = Instantiate(characterPrefab, charactersContainer);
             instance.name = "Character_" + placement.id;
 
             var rect = instance.rectTransform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = placement.position.ToVector2();
-            rect.sizeDelta = placement.size.ToVector2();
+
+            if (placement.anchor != null)
+            {
+                // Normalized mode: pin the portrait's pivot to a fraction
+                // of the container. anchorMin == anchorMax means "point
+                // anchor," not "stretch" -- sizeDelta below is then the
+                // portrait's literal size, same idea as legacy mode, just
+                // positioned via a fraction instead of a pixel offset from
+                // center.
+                rect.anchorMin = rect.anchorMax = placement.anchor.ToVector2();
+                rect.anchoredPosition = Vector2.zero;
+
+                rect.sizeDelta = placement.sizeNormalized != null
+                    ? new Vector2(placement.sizeNormalized.width * containerRect.width,
+                                  placement.sizeNormalized.height * containerRect.height)
+                    : placement.size.ToVector2();
+            }
+            else
+            {
+                // Legacy mode: fixed pixel offset from container center, in
+                // Reference Resolution units -- see the class-level comment
+                // above about why Reference Resolution has to stay fixed
+                // for this to keep looking right.
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = placement.position.ToVector2();
+                rect.sizeDelta = placement.size.ToVector2();
+            }
 
             // Fall back to this character's npc_templates.json entry for
             // anything the scene didn't specify itself -- keeps a recurring

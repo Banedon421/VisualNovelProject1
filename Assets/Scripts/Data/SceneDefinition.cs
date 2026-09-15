@@ -26,12 +26,43 @@ public class SizeData
 // the matching NpcTemplateDefinition (looked up by "id") from
 // npc_templates.json, so a recurring character's name/default look isn't
 // repeated in every scene file that uses them.
+//
+// POSITIONING: two modes, chosen per-character by which fields the JSON
+// sets. Both are read by GameBootstrapper.ApplyCharacters.
+//
+//   - NORMALIZED (preferred for new scenes): set "anchor" (0..1 fraction
+//     of the CharactersContainer, x left->right, y bottom->top) and
+//     optionally "sizeNormalized" (0..1 fraction of the container's
+//     width/height). These are fractions of the container rather than
+//     fixed pixel numbers, so a character placed this way stays
+//     proportionally in the same spot and the same relative size no
+//     matter what aspect ratio Canvas Scaler resolves to on a given
+//     screen -- Unity's own RectTransform anchor system does this, no
+//     C# scale-factor math needed anywhere.
+//   - LEGACY PIXEL (still supported -- this is what town_square.json and
+//     village_intro.json currently use): set "position" (pixel offset
+//     from the container's center, in Reference Resolution units) and
+//     "size" (pixel width/height). This is correct across different
+//     SCREEN resolutions as long as the CanvasScaler's Reference
+//     Resolution itself stays fixed at whatever value these numbers were
+//     authored against. It does NOT adapt to a different aspect ratio the
+//     way normalized mode does.
+//
+// If "anchor" is present it wins, and "position"/"size" are ignored for
+// that character. Mixing modes across different characters in the same
+// scene is fine.
 [Serializable]
 public class CharacterPlacement
 {
     public string id;
     public string displayName;
     public string sprite;
+
+    // Normalized mode (optional -- null if the JSON doesn't set it).
+    public Vec2Data anchor;
+    public SizeData sizeNormalized;
+
+    // Legacy pixel mode (defaults keep old scene files working unchanged).
     public Vec2Data position = new Vec2Data();
     public SizeData size = new SizeData { width = 500, height = 900 };
 }
