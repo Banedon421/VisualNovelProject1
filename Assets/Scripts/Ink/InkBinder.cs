@@ -1,19 +1,20 @@
 using Ink.Runtime;
 using UnityEngine;
 
-// The bridge between an ink Story and the C# WorldState. Every EXTERNAL
-// function declared in main.ink must have a matching binding here, with a
-// matching name and parameter count/order. If you add a new EXTERNAL line
-// in ink, add its binding here too -- the two files have to stay in sync
-// by hand, there's no automatic check for that at the point of writing
-// either file. GameBootstrapper does call story.ValidateExternalBindings()
-// right after Bind() runs, though, which throws immediately (with a clear
-// message naming the missing function) if the two ever drift apart --
-// that's the actual safety net, this comment is just a reminder while
-// you're editing.
+// The bridge between an ink Story and the C# WorldState/StageDirector.
+// Every EXTERNAL function declared in an .ink file must have a matching
+// binding here, with a matching name and parameter count/order. If you add
+// a new EXTERNAL line in ink, add its binding here too -- the two files
+// have to stay in sync by hand, there's no automatic check for that at the
+// point of writing either file. GameBootstrapper does call
+// story.ValidateExternalBindings() right after Bind() runs, though, which
+// throws immediately (with a clear message naming the missing function) if
+// the two ever drift apart -- that's the actual safety net, this comment
+// is just a reminder while you're editing.
 public class InkBinder : MonoBehaviour
 {
     public WorldState World;
+    public StageDirector Stage;
 
     public void Bind(Story story)
     {
@@ -36,5 +37,27 @@ public class InkBinder : MonoBehaviour
 
         story.BindExternalFunction("get_year", () => (float)World.Clock.CurrentYear);
         story.BindExternalFunction("advance_years", (float years) => World.Clock.AdvanceYears(Mathf.RoundToInt(years)));
+
+        // --- Stage control (StageDirector) ---
+        // All of these are fire-and-forget: they kick off (or cancel and
+        // restart) a coroutine on StageDirector and return immediately.
+        // Ink's own Continue() never waits on them, so a character can
+        // still be mid-slide while the next line of dialogue prints.
+        story.BindExternalFunction("jump_to", (string id, string position) => Stage.JumpTo(id, position, animated: true));
+        story.BindExternalFunction("jump_to_instant", (string id, string position) => Stage.JumpTo(id, position, animated: false));
+        story.BindExternalFunction("enter", (string id, string position) => Stage.Enter(id, position));
+        story.BindExternalFunction("exit", (string id) => Stage.Exit(id));
+        story.BindExternalFunction("turn_around", (string id) => Stage.TurnAround(id));
+        story.BindExternalFunction("face", (string id, string direction) => Stage.Face(id, direction));
+        story.BindExternalFunction("switch_mood", (string id, string mood) => Stage.SwitchMood(id, mood));
+        story.BindExternalFunction("highlight", (string id) => Stage.Highlight(id));
+        story.BindExternalFunction("set_depth", (string id, float order) => Stage.SetDepth(id, Mathf.RoundToInt(order)));
+
+        // Generic transparency control. "duration" is in SECONDS (0.5 =
+        // 500ms) for consistency with moveDuration/fadeDuration -- seconds
+        // stay correct regardless of framerate, a frame count wouldn't.
+        story.BindExternalFunction("fade_to", (string id, float alpha, float duration) => Stage.FadeTo(id, alpha, duration));
+        story.BindExternalFunction("fade_in", (string id) => Stage.FadeIn(id));
+        story.BindExternalFunction("fade_out", (string id) => Stage.FadeOut(id));
     }
 }

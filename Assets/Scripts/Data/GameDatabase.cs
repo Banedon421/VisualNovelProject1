@@ -13,6 +13,7 @@ public class GameDatabase
     public List<PoleDefinition> Poles;
     public List<StatDefinition> Stats;
     public List<NpcTemplateDefinition> NpcTemplates;
+    public List<PositionDefinition> Positions;
 
     public static GameDatabase LoadFromStreamingAssets()
     {
@@ -22,6 +23,7 @@ public class GameDatabase
             Poles = LoadJson<List<PoleDefinition>>("poles.json"),
             Stats = LoadJson<List<StatDefinition>>("stats.json"),
             NpcTemplates = LoadJson<List<NpcTemplateDefinition>>("npc_templates.json"),
+            Positions = LoadJson<List<PositionDefinition>>("positions.json"),
         };
     }
 

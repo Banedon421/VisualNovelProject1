@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 
-// Design-time data shapes: what clans/poles/NPC templates exist. These are
-// loaded from plain JSON files in Assets/StreamingAssets/Data/ (see
-// GameDatabase.cs) rather than hand-filled in the Unity Inspector, so
-// either of you can edit them in a text editor.
+// Design-time data shapes: what clans/poles/NPC templates/stage positions
+// exist. These are loaded from plain JSON files in
+// Assets/StreamingAssets/Data/ (see GameDatabase.cs) rather than
+// hand-filled in the Unity Inspector, so either of you can edit them in a
+// text editor.
 
 [Serializable]
 public class ClanDefinition
@@ -26,12 +27,13 @@ public class PoleDefinition
 }
 
 // A recurring NPC's base identity, independent of any one scene. Used as a
-// fallback by GameBootstrapper: if a scene's CharacterPlacement doesn't
-// specify displayName/sprite for this id, these values are used instead --
-// so "Dupont is called Dupont and defaults to his neutral portrait" only
-// needs to be said once, not repeated in every scene file he appears in.
-// A scene can still override either field (e.g. a mood-specific sprite for
-// one particular beat) by simply specifying it directly.
+// fallback by StageDirector: if a scene's CharacterPlacement (or an
+// enter() call) doesn't specify displayName/sprite for this id, these
+// values are used instead -- so "Dupont is called Dupont and defaults to
+// his neutral portrait" only needs to be said once, not repeated in every
+// scene file or every enter() call. A scene can still override either
+// field (e.g. a mood-specific sprite for one particular beat) by simply
+// specifying it directly.
 [Serializable]
 public class NpcTemplateDefinition
 {
@@ -39,4 +41,21 @@ public class NpcTemplateDefinition
     public string role;         // e.g. "blacksmith", "farmer"
     public string baseName;     // fallback for CharacterPlacement.displayName
     public string defaultSprite; // fallback for CharacterPlacement.sprite
+}
+
+// A named on-screen spot, shared across every scene unless a specific
+// scene overrides/extends it (see SceneDefinition.positionOverrides).
+// "anchor" is a normalized (0..1, or outside that range for off-screen
+// staging spots) fraction of CharactersContainer -- same coordinate space
+// CharacterPlacement.anchor already uses, just given a name so ink can
+// say jump_to("dupont", "right") instead of raw numbers.
+// "sizeNormalized" is optional -- if a position doesn't set it (rare;
+// most should), StageDirector.JumpTo keeps whatever size the character
+// already is rather than resizing them.
+[Serializable]
+public class PositionDefinition
+{
+    public string id;
+    public Vec2Data anchor;
+    public SizeData sizeNormalized;
 }

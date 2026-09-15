@@ -22,31 +22,32 @@ public class SizeData
 }
 
 // One character's placement in a given scene. "displayName" and "sprite"
-// are optional overrides -- if left out, GameBootstrapper falls back to
-// the matching NpcTemplateDefinition (looked up by "id") from
+// are optional overrides -- if left out, StageDirector falls back to the
+// matching NpcTemplateDefinition (looked up by "id") from
 // npc_templates.json, so a recurring character's name/default look isn't
 // repeated in every scene file that uses them.
 //
 // POSITIONING: two modes, chosen per-character by which fields the JSON
-// sets. Both are read by GameBootstrapper.ApplyCharacters.
+// sets. Both are read by StageDirector.SpawnCharacter.
 //
-//   - NORMALIZED (preferred for new scenes): set "anchor" (0..1 fraction
-//     of the CharactersContainer, x left->right, y bottom->top) and
-//     optionally "sizeNormalized" (0..1 fraction of the container's
-//     width/height). These are fractions of the container rather than
-//     fixed pixel numbers, so a character placed this way stays
-//     proportionally in the same spot and the same relative size no
-//     matter what aspect ratio Canvas Scaler resolves to on a given
-//     screen -- Unity's own RectTransform anchor system does this, no
-//     C# scale-factor math needed anywhere.
-//   - LEGACY PIXEL (still supported -- this is what town_square.json and
+//   - NORMALIZED (preferred for new scenes, and REQUIRED if you want this
+//     character to later respond to jump_to/enter/exit from ink): set
+//     "anchor" (0..1 fraction of the CharactersContainer, x left->right,
+//     y bottom->top) and optionally "sizeNormalized" (0..1 fraction of
+//     the container's width/height). These are fractions of the
+//     container rather than fixed pixel numbers, so a character placed
+//     this way stays proportionally in the same spot and the same
+//     relative size no matter what aspect ratio Canvas Scaler resolves
+//     to -- Unity's own RectTransform anchor system does this, no C#
+//     scale-factor math needed anywhere.
+//   - LEGACY PIXEL (still supported -- what town_square.json and
 //     village_intro.json currently use): set "position" (pixel offset
 //     from the container's center, in Reference Resolution units) and
-//     "size" (pixel width/height). This is correct across different
-//     SCREEN resolutions as long as the CanvasScaler's Reference
-//     Resolution itself stays fixed at whatever value these numbers were
-//     authored against. It does NOT adapt to a different aspect ratio the
-//     way normalized mode does.
+//     "size" (pixel width/height). Movement functions (jump_to etc.)
+//     still work on a legacy-placed character -- StageDirector converts
+//     its current pixel offset to an equivalent anchor fraction before
+//     animating -- but the character won't adapt to a different aspect
+//     ratio until the first time it's moved.
 //
 // If "anchor" is present it wins, and "position"/"size" are ignored for
 // that character. Mixing modes across different characters in the same
@@ -81,4 +82,10 @@ public class SceneDefinition
     public string inkFile;
     public string dialogueLayout;
     public List<CharacterPlacement> characters = new List<CharacterPlacement>();
+
+    // Optional named positions specific to this scene -- merged on top of
+    // the shared StreamingAssets/Data/positions.json (same id = override,
+    // new id = addition). Leave null/omitted for scenes that only need the
+    // shared "left"/"center"/"right"/"off_left"/"off_right" set.
+    public List<PositionDefinition> positionOverrides;
 }

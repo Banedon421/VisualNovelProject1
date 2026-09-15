@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -13,6 +12,12 @@ using Ink.Runtime;
 // ordinary content changes, only when a wholly new KIND of element is
 // introduced (e.g. a music cue) that this script doesn't know how to read
 // yet.
+//
+// Character instancing itself (the actual Instantiate + template-fallback
+// logic) now lives in StageDirector, since ink-driven enter()/jump_to()
+// need the exact same logic mid-scene that the initial scene load uses --
+// this class just reads the JSON and calls into StageDirector once at
+// Start(), then hands StageDirector off to InkBinder for everything after.
 //
 // IMPORTANT -- Reference Resolution: any scene JSON using legacy pixel
 // "position"/"size" for characters (see CharacterPlacement in
@@ -36,7 +41,7 @@ public class GameBootstrapper : MonoBehaviour
     public Image backgroundImage;
     [Tooltip("An empty, full-screen RectTransform that character portraits are instantiated into. Its own position doesn't matter much since each character positions itself, but it should sit after Background and before the dialogue UI in sibling order.")]
     public RectTransform charactersContainer;
-    [Tooltip("The 'Portrait' prefab -- a plain UI Image, instantiated once per character in the scene JSON.")]
+    [Tooltip("The 'Portrait' prefab -- a plain UI Image, instantiated once per character in the scene JSON (and once per ink enter() call).")]
     public Image characterPrefab;
 
     [Header("Dialogue UI (assign once)")]
@@ -57,7 +62,10 @@ public class GameBootstrapper : MonoBehaviour
         if (sceneDefinition == null) return;
 
         ApplyBackground(sceneDefinition.background);
-        ApplyCharacters(sceneDefinition.characters, database);
+
+        var stageDirector = SetUpStageDirector(database, sceneDefinition);
+        stageDirector.SpawnInitialCast(sceneDefinition.characters);
+
         ApplyDialogueLayout(sceneDefinition.dialogueLayout);
 
         // Single source of truth for "where are the on-screen portraits" --
@@ -68,7 +76,26 @@ public class GameBootstrapper : MonoBehaviour
         // Inspector slots in sync.
         if (dialogueUI != null) dialogueUI.charactersContainer = charactersContainer;
 
-        RunInk(sceneDefinition.inkFile, database);
+        RunInk(sceneDefinition.inkFile, database, stageDirector);
+    }
+
+    private StageDirector SetUpStageDirector(GameDatabase database, SceneDefinition sceneDefinition)
+    {
+        if (charactersContainer == null || characterPrefab == null)
+        {
+            Debug.LogError("GameBootstrapper: Characters Container or Character Prefab not assigned.");
+        }
+
+        // Same reload-safety reasoning as the InkBinder destroy-first
+        // pattern in RunInk below -- not reachable yet since Start() only
+        // runs once today, but cheap to get right now rather than leave as
+        // a trap for whenever scene-switching exists.
+        var existing = GetComponent<StageDirector>();
+        if (existing != null) Destroy(existing);
+
+        var stage = gameObject.AddComponent<StageDirector>();
+        stage.Initialize(charactersContainer, characterPrefab, database, database.Positions, sceneDefinition.positionOverrides);
+        return stage;
     }
 
     private void ApplyBackground(string spriteName)
@@ -89,98 +116,6 @@ public class GameBootstrapper : MonoBehaviour
         backgroundImage.sprite = sprite;
     }
 
-    private void ApplyCharacters(List<CharacterPlacement> characters, GameDatabase database)
-    {
-        if (charactersContainer == null || characterPrefab == null)
-        {
-            Debug.LogError("GameBootstrapper: Characters Container or Character Prefab not assigned.");
-            return;
-        }
-
-        // Clear any previously-instantiated characters -- harmless on first
-        // run, and means this same method can safely be called again
-        // later if/when scene-switching mid-game becomes a thing.
-        for (int i = charactersContainer.childCount - 1; i >= 0; i--)
-        {
-            Destroy(charactersContainer.GetChild(i).gameObject);
-        }
-
-        if (characters == null) return;
-
-        // charactersContainer is stretched full-screen (anchors 0,0 to
-        // 1,1), so by the time we read its rect here, it already reflects
-        // whatever aspect ratio Canvas Scaler resolved to on this screen --
-        // that's what makes sizeNormalized below aspect-correct without any
-        // extra math.
-        Rect containerRect = charactersContainer.rect;
-
-        foreach (var placement in characters)
-        {
-            var instance = Instantiate(characterPrefab, charactersContainer);
-            instance.name = "Character_" + placement.id;
-
-            var rect = instance.rectTransform;
-
-            if (placement.anchor != null)
-            {
-                // Normalized mode: pin the portrait's pivot to a fraction
-                // of the container. anchorMin == anchorMax means "point
-                // anchor," not "stretch" -- sizeDelta below is then the
-                // portrait's literal size, same idea as legacy mode, just
-                // positioned via a fraction instead of a pixel offset from
-                // center.
-                rect.anchorMin = rect.anchorMax = placement.anchor.ToVector2();
-                rect.anchoredPosition = Vector2.zero;
-
-                rect.sizeDelta = placement.sizeNormalized != null
-                    ? new Vector2(placement.sizeNormalized.width * containerRect.width,
-                                  placement.sizeNormalized.height * containerRect.height)
-                    : placement.size.ToVector2();
-            }
-            else
-            {
-                // Legacy mode: fixed pixel offset from container center, in
-                // Reference Resolution units -- see the class-level comment
-                // above about why Reference Resolution has to stay fixed
-                // for this to keep looking right.
-                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-                rect.anchoredPosition = placement.position.ToVector2();
-                rect.sizeDelta = placement.size.ToVector2();
-            }
-
-            // Fall back to this character's npc_templates.json entry for
-            // anything the scene didn't specify itself -- keeps a recurring
-            // character's name/default look from being repeated in every
-            // scene file they appear in.
-            var template = database.NpcTemplates?.Find(t => t.id == placement.id);
-
-            string displayName = !string.IsNullOrEmpty(placement.displayName)
-                ? placement.displayName
-                : template?.baseName;
-
-            string spriteName = !string.IsNullOrEmpty(placement.sprite)
-                ? placement.sprite
-                : template?.defaultSprite;
-
-            var sprite = string.IsNullOrEmpty(spriteName) ? null : Resources.Load<Sprite>("Portraits/" + spriteName);
-            if (sprite == null)
-            {
-                Debug.LogError($"GameBootstrapper: no portrait sprite found for character '{placement.id}' " +
-                                $"(tried Resources/Portraits/{spriteName}). Check the scene JSON's \"sprite\" " +
-                                "field or this character's npc_templates.json entry.");
-            }
-            else
-            {
-                instance.sprite = sprite;
-            }
-
-            var view = instance.gameObject.AddComponent<CharacterView>();
-            view.characterId = placement.id;
-            view.displayName = displayName;
-            view.portraitImage = instance;
-        }
-    }
-
     private void ApplyDialogueLayout(string layoutFileName)
     {
         if (string.IsNullOrEmpty(layoutFileName) || dialogueUI == null) return;
@@ -189,7 +124,7 @@ public class GameBootstrapper : MonoBehaviour
         if (layout != null) dialogueUI.ApplyLayout(layout);
     }
 
-    private void RunInk(string inkFileName, GameDatabase database)
+    private void RunInk(string inkFileName, GameDatabase database, StageDirector stageDirector)
     {
         if (string.IsNullOrEmpty(inkFileName))
         {
@@ -233,6 +168,7 @@ public class GameBootstrapper : MonoBehaviour
 
         var binder = gameObject.AddComponent<InkBinder>();
         binder.World = world;
+        binder.Stage = stageDirector;
         binder.Bind(story);
 
         try
