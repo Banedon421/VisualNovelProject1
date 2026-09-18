@@ -8,8 +8,9 @@ using Ink.Runtime;
 // Drives the dialogue UI from an ink Story: one text block for the
 // accumulated story text, and a dynamically-built list of choice buttons.
 // ApplyLayout additionally lets a DialogueLayoutConfig (loaded from JSON by
-// GameBootstrapper) control this UI's position, size, and colors -- so
-// none of that needs re-wiring by hand in the Inspector when it changes.
+// GameBootstrapper) control this UI's position, size, colors, and now the
+// 9-slice border sprites for the panel and choice pills -- so none of that
+// needs re-wiring by hand in the Inspector when it changes.
 //
 // Also gives CharacterView its first real payoff: whenever the most
 // recently continued ink line carries a "# speaker:id" tag, every other
@@ -38,6 +39,11 @@ public class DialogueUIController : MonoBehaviour
     private readonly List<Button> _spawnedButtons = new List<Button>();
     private string _currentSpeakerId;
 
+    // Cached from the last ApplyLayout call, applied to every choice
+    // button spawned afterward in Refresh().
+    private Sprite _choiceBorderSprite;
+    private Color _choiceColor = Color.white;
+
     public void Bind(Story story)
     {
         _story = story;
@@ -54,6 +60,8 @@ public class DialogueUIController : MonoBehaviour
             {
                 dialoguePanelBackground.color = boxColor;
             }
+
+            ApplyBorderSprite(dialoguePanelBackground, config.panelBorderSprite, "panel");
 
             var panelRect = dialoguePanelBackground.rectTransform;
             panelRect.anchorMin = config.textAreaAnchorMin.ToVector2();
@@ -78,6 +86,37 @@ public class DialogueUIController : MonoBehaviour
             choiceContainer.offsetMin = Vector2.zero;
             choiceContainer.offsetMax = Vector2.zero;
         }
+
+        // Cache choice styling for Refresh() -- buttons don't exist yet at
+        // ApplyLayout time (Bind/Refresh runs after this), so there's
+        // nothing to apply this TO until the first choice list is built.
+        _choiceBorderSprite = string.IsNullOrEmpty(config.choiceBorderSprite)
+            ? null
+            : Resources.Load<Sprite>("UI/" + config.choiceBorderSprite);
+        if (!string.IsNullOrEmpty(config.choiceBorderSprite) && _choiceBorderSprite == null)
+        {
+            Debug.LogWarning($"DialogueUIController: no sprite found at Resources/UI/{config.choiceBorderSprite} " +
+                              "-- choices will use the Button prefab's own default look.");
+        }
+
+        if (!ColorUtility.TryParseHtmlString(config.choiceColor, out _choiceColor))
+        {
+            Debug.LogWarning($"DialogueUIController: couldn't parse choiceColor '{config.choiceColor}', keeping previous value.");
+        }
+    }
+
+    private void ApplyBorderSprite(Image target, string spriteName, string label)
+    {
+        if (string.IsNullOrEmpty(spriteName)) return;
+
+        var sprite = Resources.Load<Sprite>("UI/" + spriteName);
+        if (sprite == null)
+        {
+            Debug.LogWarning($"DialogueUIController: no sprite found at Resources/UI/{spriteName} -- {label} stays a flat color.");
+            return;
+        }
+        target.sprite = sprite;
+        target.type = Image.Type.Sliced;
     }
 
     private void Refresh()
@@ -117,6 +156,7 @@ public class DialogueUIController : MonoBehaviour
             Button button = Instantiate(choiceButtonPrefab, choiceContainer);
             button.GetComponentInChildren<TMP_Text>().text = choice.text;
             button.onClick.AddListener(() => SelectChoice(choiceIndex));
+            ApplyChoiceStyle(button);
             _spawnedButtons.Add(button);
         }
 
@@ -124,6 +164,37 @@ public class DialogueUIController : MonoBehaviour
         {
             storyText.text += "\n\n--- END ---";
         }
+    }
+
+    private void ApplyChoiceStyle(Button button)
+    {
+        var img = button.GetComponent<Image>();
+        if (img == null) return;
+
+        if (_choiceBorderSprite != null)
+        {
+            img.sprite = _choiceBorderSprite;
+            img.type = Image.Type.Sliced;
+        }
+
+        // Set the ColorBlock itself, NOT img.color directly -- Selectable
+        // overwrites its target Graphic's color on every state transition
+        // (pointer enter/exit, press), so a one-off img.color assignment
+        // here would get silently reset back to the prefab's default
+        // white the moment the player's mouse leaves the button. Building
+        // normal/highlighted/pressed from the configured choiceColor keeps
+        // every interaction state on-theme instead of just the resting one.
+        var colors = button.colors;
+        colors.normalColor = _choiceColor;
+        colors.highlightedColor = Brighten(_choiceColor, 1.18f);
+        colors.pressedColor = Brighten(_choiceColor, 0.82f);
+        colors.selectedColor = colors.highlightedColor;
+        button.colors = colors;
+    }
+
+    private static Color Brighten(Color c, float factor)
+    {
+        return new Color(Mathf.Clamp01(c.r * factor), Mathf.Clamp01(c.g * factor), Mathf.Clamp01(c.b * factor), c.a);
     }
 
     private void UpdateSpeakerHighlight()

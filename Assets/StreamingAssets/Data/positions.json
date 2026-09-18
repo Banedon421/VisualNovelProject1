@@ -1,0 +1,7 @@
+[
+  { "id": "left",      "anchor": { "x": 0.32,  "y": 0.43 }, "sizeNormalized": { "width": 0.25, "height": 0.8 } },
+  { "id": "center",    "anchor": { "x": 0.50,  "y": 0.43 }, "sizeNormalized": { "width": 0.25, "height": 0.8 } },
+  { "id": "right",     "anchor": { "x": 0.68,  "y": 0.43 }, "sizeNormalized": { "width": 0.25, "height": 0.8 } },
+  { "id": "off_left",  "anchor": { "x": -0.15, "y": 0.43 }, "sizeNormalized": { "width": 0.25, "height": 0.8 } },
+  { "id": "off_right", "anchor": { "x": 1.15,  "y": 0.43 }, "sizeNormalized": { "width": 0.25, "height": 0.8 } }
+]

@@ -1,8 +1,8 @@
 {
-  "textAreaAnchorMin": { "x": 0.0, "y": 0.0 },
-  "textAreaAnchorMax": { "x": 1.0, "y": 0.3 },
-  "choiceAreaAnchorMin": { "x": 0.0, "y": 0.3 },
-  "choiceAreaAnchorMax": { "x": 0.25, "y": 0.8 },
+  "textAreaAnchorMin": { "x": 0.0, "y": 0.55 },
+  "textAreaAnchorMax": { "x": 1.0, "y": 1.0 },
+  "choiceAreaAnchorMin": { "x": 0.0, "y": 0.0 },
+  "choiceAreaAnchorMax": { "x": 1.0, "y": 0.5 },
   "fontSize": 36,
   "textColor": "#FFFFFFFF",
   "boxColor": "#1B140FE0",

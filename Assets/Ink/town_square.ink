@@ -1,17 +1,7 @@
 ﻿// town_square.ink
 // Scene: town_square.json points here.
 
-EXTERNAL get_stat(stat_id)
-EXTERNAL add_stat(stat_id, amount)
-EXTERNAL get_relationship(target_id)
-EXTERNAL add_relationship(target_id, amount)
-EXTERNAL get_clan()
-EXTERNAL get_pole()
-EXTERNAL set_pole(pole_id)
-EXTERNAL has_flag(flag_id)
-EXTERNAL set_flag(flag_id)
-EXTERNAL get_year()
-EXTERNAL advance_years(years)
+INCLUDE shared_externals.ink
 
 VAR player_clan = ""
 

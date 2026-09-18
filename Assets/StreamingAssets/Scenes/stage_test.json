@@ -1,0 +1,7 @@
+{
+  "sceneId": "stage_test",
+  "background": "town_square",
+  "inkFile": "stage_test.json",
+  "dialogueLayout": "default_dialogue_layout.json",
+  "characters": []
+}
