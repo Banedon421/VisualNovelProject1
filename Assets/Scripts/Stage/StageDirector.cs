@@ -26,12 +26,17 @@ using UnityEngine.UI;
 // Everything here is otherwise "fire and forget" from ink's perspective
 // -- ink's own Continue() never waits on any of this, so a character can
 // still be mid-slide while the next line of dialogue is already printing.
+// DialogueUIController can optionally pace itself against this via
+// IsAnimating/IsAnyAnimating below (see its "wait" tags / default-wait
+// behavior) -- that's a read-only query, it doesn't change anything here.
 public class StageDirector : MonoBehaviour
 {
     [Tooltip("Duration in seconds for an animated jump_to move or a highlight pop.")]
     public float moveDuration = 0.6f;
     [Tooltip("Default duration in seconds for enter/exit and fade_in/fade_out.")]
     public float fadeDuration = 0.35f;
+    [Tooltip("Duration in seconds for a turn_around/face flip (the compress-flip-grow animation).")]
+    public float turnDuration = 0.4f;
 
     private RectTransform _container;
     private Image _characterPrefab;
@@ -54,9 +59,6 @@ public class StageDirector : MonoBehaviour
         _positions.Clear();
         if (globalPositions != null)
             foreach (var p in globalPositions) _positions[p.id] = p;
-        // Scene-specific entries add new names or override a global one of
-        // the same id -- e.g. town_square could define a "well" position
-        // no other scene needs, without editing the shared positions.json.
         if (sceneOverrides != null)
             foreach (var p in sceneOverrides) _positions[p.id] = p;
     }
@@ -68,11 +70,6 @@ public class StageDirector : MonoBehaviour
         for (int i = _container.childCount - 1; i >= 0; i--)
             Destroy(_container.GetChild(i).gameObject);
 
-        // Stop any leftover per-character queues from a previous scene --
-        // same reload-safety reasoning as GameBootstrapper's InkBinder
-        // destroy-first pattern. Not reachable yet since Start() only runs
-        // once today, but cheap to get right now rather than leave as a
-        // trap for whenever scene-switching exists.
         foreach (var runner in _runners.Values)
             if (runner != null) StopCoroutine(runner);
         _queues.Clear();
@@ -144,10 +141,6 @@ public class StageDirector : MonoBehaviour
     }
 
     // --- Ink-facing operations, called by InkBinder ---
-    // Every one of these does its "can this even happen" validation
-    // IMMEDIATELY (so a typo'd id/position is reported right when ink
-    // calls it), then enqueues the actual work to run in this
-    // character's turn.
 
     public void JumpTo(string id, string positionName, bool animated)
     {
@@ -157,8 +150,6 @@ public class StageDirector : MonoBehaviour
         var rect = view.portraitImage.rectTransform;
         Vector2 targetAnchor = pos.anchor.ToVector2();
 
-        // null = "no size defined for this position, keep whatever size
-        // the character already is and just move them."
         Vector2? targetSize = null;
         if (pos.sizeNormalized != null)
         {
@@ -180,10 +171,6 @@ public class StageDirector : MonoBehaviour
         }
         if (!TryGetPosition(positionName, out var pos)) return;
 
-        // Spawning happens immediately (not queued) so _onScreen reflects
-        // reality right away -- a jump_to/highlight/etc. call on this same
-        // id on the very next ink line can find it. Only the fade-in
-        // VISUAL is queued.
         var view = SpawnCharacter(id, null, null, pos.anchor, pos.sizeNormalized, new Vec2Data(), new SizeData { width = 500, height = 900 });
         _onScreen[id] = view;
 
@@ -197,11 +184,6 @@ public class StageDirector : MonoBehaviour
     {
         if (!_onScreen.TryGetValue(id, out var view)) { WarnNotOnScreen(id, "Exit"); return; }
 
-        // Removed from _onScreen immediately -- once exit() has been
-        // called, this character is "gone" for every subsequent call even
-        // while its fade-out is still queued/playing. That's the least
-        // surprising behavior: nothing can jump_to/highlight/etc. someone
-        // who is already leaving, even mid-fade.
         _onScreen.Remove(id);
         EnqueueAnim(id, ExitRoutine(view, fadeDuration));
     }
@@ -209,21 +191,15 @@ public class StageDirector : MonoBehaviour
     public void TurnAround(string id)
     {
         if (!_onScreen.TryGetValue(id, out var view)) { WarnNotOnScreen(id, "TurnAround"); return; }
-        EnqueueAnim(id, InstantRoutine(() => { view.facingRight = !view.facingRight; ApplyFacing(view); }));
+        // null target = toggle whatever facingRight actually is when this
+        // action's turn in the queue arrives (see TurnRoutine).
+        EnqueueAnim(id, TurnRoutine(view, null, turnDuration));
     }
 
     public void Face(string id, string direction)
     {
         if (!_onScreen.TryGetValue(id, out var view)) { WarnNotOnScreen(id, "Face"); return; }
-        EnqueueAnim(id, InstantRoutine(() => { view.facingRight = direction != "left"; ApplyFacing(view); }));
-    }
-
-    private void ApplyFacing(CharacterView view)
-    {
-        var t = view.portraitImage.rectTransform;
-        var scale = t.localScale;
-        float mag = Mathf.Abs(scale.x);
-        t.localScale = new Vector3(view.facingRight ? mag : -mag, scale.y, scale.z);
+        EnqueueAnim(id, TurnRoutine(view, direction != "left", turnDuration));
     }
 
     public void SwitchMood(string id, string mood)
@@ -231,10 +207,6 @@ public class StageDirector : MonoBehaviour
         if (!_onScreen.TryGetValue(id, out var view)) { WarnNotOnScreen(id, "SwitchMood"); return; }
         EnqueueAnim(id, InstantRoutine(() =>
         {
-            // Convention: mood variants live next to the default portrait
-            // using the same "{id}_{mood}" naming npc_templates.json
-            // already uses for defaultSprite (dupont_neutral.jpg ->
-            // dupont_worried.jpg is just adding a file, no config needed).
             string spriteName = $"{id}_{mood}";
             var sprite = Resources.Load<Sprite>("Portraits/" + spriteName);
             if (sprite == null)
@@ -260,11 +232,6 @@ public class StageDirector : MonoBehaviour
         }));
     }
 
-    // Generic transparency control -- targetAlpha 0..1, duration in
-    // SECONDS (not frames: seconds stay correct regardless of framerate,
-    // frame counts don't -- 500ms is just 0.5). fade_in/fade_out are
-    // thin convenience wrappers using the same default fadeDuration
-    // enter/exit already use.
     public void FadeTo(string id, float targetAlpha, float duration)
     {
         if (!_onScreen.TryGetValue(id, out var view)) { WarnNotOnScreen(id, "FadeTo"); return; }
@@ -307,23 +274,27 @@ public class StageDirector : MonoBehaviour
         while (_queues.TryGetValue(id, out var queue) && queue.Count > 0)
         {
             var action = queue.Dequeue();
-            // Waits for this action to fully finish -- including its own
-            // internal yields -- before the loop dequeues the next one.
-            // This is the entire ordering guarantee described at the top
-            // of the class, and it costs nothing for "instant" actions
-            // (InstantRoutine/SnapRoutine yield break immediately, so this
-            // just falls through to the next queued item in the same frame).
             yield return StartCoroutine(action);
         }
         _runners[id] = null;
     }
 
-    // --- Individual animations. Each reads whatever state it needs
-    // (current anchor, current alpha, current scale) INSIDE the
-    // coroutine body rather than from a value captured when it was
-    // enqueued -- C# iterator methods don't run any code until actually
-    // started, so this naturally reads "current" state at the moment
-    // this action's turn in the queue arrives, not at enqueue time. ---
+    // Queried by DialogueUIController to pace text against animations
+    // (its "wait:"/"pause:" tags and default-wait behavior). A character
+    // counts as animating whenever its queue still has a runner coroutine
+    // actively draining it -- RunQueue clears the runner to null the
+    // instant the queue empties, so this is always current, no extra
+    // bookkeeping needed.
+    public bool IsAnimating(string id) => _runners.TryGetValue(id, out var runner) && runner != null;
+
+    public bool IsAnyAnimating()
+    {
+        foreach (var runner in _runners.Values)
+            if (runner != null) return true;
+        return false;
+    }
+
+    // --- Individual animations ---
 
     private static IEnumerator InstantRoutine(System.Action action)
     {
@@ -331,11 +302,6 @@ public class StageDirector : MonoBehaviour
         yield break;
     }
 
-    // Interpolates from the character's CURRENT effective anchor --
-    // computed from its existing anchor + anchoredPosition, not just
-    // anchorMin -- so this works correctly even for a character still
-    // sitting in legacy pixel-offset mode (anchor 0.5,0.5 + a pixel
-    // offset), not only for ones already placed via a named anchor.
     private static IEnumerator MoveRoutine(RectTransform rect, RectTransform container, Vector2 targetAnchor, Vector2? targetSize, float duration)
     {
         Rect containerRect = container.rect;
@@ -368,11 +334,6 @@ public class StageDirector : MonoBehaviour
         yield break;
     }
 
-    // "to" only -- "from" is read from the Image's CURRENT alpha the
-    // moment this routine actually starts (see the class-level note
-    // above), which is what makes fade_to/fade_in/fade_out, enter's
-    // fade-in, and exit's fade-out all compose correctly through the
-    // same queue without needing to pre-compute a starting value.
     private static IEnumerator FadeRoutine(Image img, float to, float duration)
     {
         float from = img.color.a;
@@ -417,5 +378,53 @@ public class StageDirector : MonoBehaviour
             yield return null;
         }
         rect.localScale = baseScale;
+    }
+
+    // Compresses the portrait horizontally to zero width, flips the
+    // facing flag (and the underlying scale sign) while nothing is
+    // visible, then grows back out to full width facing the new
+    // direction -- giving the illusion of a continuous horizontal flip
+    // instead of an instant pop.
+    //
+    // targetFacingRight == null means "toggle" (TurnAround): resolved
+    // HERE, when this action's turn in the queue actually arrives, not
+    // when TurnAround/Face was called -- same "read current state inside
+    // the coroutine" principle as every other routine in this class. This
+    // matters because a toggle has to toggle whatever facingRight actually
+    // is at that moment, not whatever it was several queued instructions
+    // ago.
+    private static IEnumerator TurnRoutine(CharacterView view, bool? targetFacingRight, float duration)
+    {
+        bool target = targetFacingRight ?? !view.facingRight;
+        if (view.facingRight == target) yield break; // already facing that way -- nothing to animate
+
+        var rect = view.portraitImage.rectTransform;
+        Vector3 baseScale = rect.localScale;
+        float mag = Mathf.Abs(baseScale.x);
+        float startSign = view.facingRight ? 1f : -1f;
+        float endSign = target ? 1f : -1f;
+        float half = duration * 0.5f;
+
+        float t = 0f;
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float p = Mathf.Clamp01(t / half);
+            rect.localScale = new Vector3(Mathf.Lerp(mag, 0f, p) * startSign, baseScale.y, baseScale.z);
+            yield return null;
+        }
+
+        view.facingRight = target;
+        rect.localScale = new Vector3(0f, baseScale.y, baseScale.z);
+
+        t = 0f;
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float p = Mathf.Clamp01(t / half);
+            rect.localScale = new Vector3(Mathf.Lerp(0f, mag, p) * endSign, baseScale.y, baseScale.z);
+            yield return null;
+        }
+        rect.localScale = new Vector3(mag * endSign, baseScale.y, baseScale.z);
     }
 }

@@ -56,7 +56,7 @@ And flipped back, so repeated testing doesn't leave him backwards.
 
 === test_highlight ===
 ~ highlight("jeanne")
-Jeanne should have popped slightly, as if she just spoke -- independent of the #speaker: dimming, which only changes opacity, not scale. # speaker:jeanne
+Jeanne should have popped slightly, as if she just spoke -- independent of the speaker: dimming, which only changes opacity, not scale. # speaker:jeanne
 -> test_choices
 
 === test_depth ===

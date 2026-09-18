@@ -75,6 +75,7 @@ public class GameBootstrapper : MonoBehaviour
         // #speaker: highlight without you having to remember to keep two
         // Inspector slots in sync.
         if (dialogueUI != null) dialogueUI.charactersContainer = charactersContainer;
+        if (dialogueUI != null) dialogueUI.stage = stageDirector;
 
         RunInk(sceneDefinition.inkFile, database, stageDirector);
     }
