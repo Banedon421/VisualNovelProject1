@@ -76,6 +76,7 @@ public class GameBootstrapper : MonoBehaviour
         // Inspector slots in sync.
         if (dialogueUI != null) dialogueUI.charactersContainer = charactersContainer;
         if (dialogueUI != null) dialogueUI.stage = stageDirector;
+        if (dialogueUI != null) dialogueUI.database = database;
 
         RunInk(sceneDefinition.inkFile, database, stageDirector);
     }

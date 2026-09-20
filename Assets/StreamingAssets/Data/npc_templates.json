@@ -1,4 +1,4 @@
 [
-  { "id": "dupont", "role": "blacksmith", "baseName": "Dupont", "defaultSprite": "dupont_neutral" },
-  { "id": "jeanne", "role": "farmer", "baseName": "Jeanne", "defaultSprite": "jeanne_neutral" }
+  { "id": "dupont", "role": "blacksmith", "baseName": "Dupont", "defaultSprite": "dupont_neutral", "nameColor": "#E0A030FF" },
+  { "id": "jeanne", "role": "farmer", "baseName": "Jeanne", "defaultSprite": "jeanne_neutral", "nameColor": "#D0A030AF" }
 ]

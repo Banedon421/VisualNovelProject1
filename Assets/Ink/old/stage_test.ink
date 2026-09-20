@@ -16,13 +16,13 @@ This is a test of every stage-direction function built so far.
 
 ~ enter("dupont", "off_left")
 ~ jump_to("dupont", "left")
-<speaker:dupont>Dupont fades in on the left and slides into position.
+Dupont fades in on the left and slides into position. # speaker:dupont
 
 ~ enter("jeanne", "off_right")
 ~ jump_to("jeanne", "right")
-<speaker:jeanne>Jeanne fades in on the right and slides into position.
+Jeanne fades in on the right and slides into position. # speaker:jeanne
 
-Notice how, once Jeanne finishes arriving, she's full opacity and Dupont dims slightly -- that's the <speaker:...> command on the line above driving CharacterView's highlight/dim, separate from anything below.
+Notice how, once Jeanne finishes arriving, she's full opacity and Dupont dims slightly -- that's the speaker: tag on the line above driving CharacterView's highlight/dim, separate from anything below.
 
 -> test_choices
 
@@ -39,17 +39,17 @@ Notice how, once Jeanne finishes arriving, she's full opacity and Dupont dims sl
 
 === test_mood ===
 ~ switch_mood("dupont", "worried")
-<speaker:dupont>Dupont's portrait should now show a "worried" mood.
+Dupont's portrait should now show a "worried" mood. # speaker:dupont
 
 If you haven't added a dupont_worried.jpg to Resources/Portraits/ yet, check the Console -- you should see a clear warning naming the missing file, and Dupont should stay on his neutral portrait rather than going blank.
 -> test_choices
 
 === test_facing ===
 ~ turn_around("dupont")
-<speaker:dupont>Dupont just flipped to face the opposite way from before.
+Dupont just flipped to face the opposite way from before. # speaker:dupont
 
 ~ face("jeanne", "left")
-<speaker:jeanne>Jeanne is now explicitly facing left, regardless of whatever turn_around would have toggled her to.
+Jeanne is now explicitly facing left, regardless of whatever turn_around would have toggled her to. # speaker:jeanne
 
 ~ turn_around("dupont")
 And flipped back, so repeated testing doesn't leave him backwards.
@@ -57,12 +57,12 @@ And flipped back, so repeated testing doesn't leave him backwards.
 
 === test_highlight ===
 ~ highlight("jeanne")
-<speaker:jeanne>Jeanne should have popped slightly, as if she just spoke -- independent of the <speaker:...> dimming, which only changes opacity, not scale.
+Jeanne should have popped slightly, as if she just spoke -- independent of the speaker: dimming, which only changes opacity, not scale. # speaker:jeanne
 -> test_choices
 
 === test_depth ===
 ~ jump_to_instant("dupont", "center")
-<speaker:dupont>Dupont snapped instantly to center -- no slide, unlike jump_to.
+Dupont snapped instantly to center -- no slide, unlike jump_to. # speaker:dupont
 
 ~ set_depth("dupont", 0)
 Dupont should now render BEHIND Jeanne if they overlap (sibling index 0 = first = furthest back).
@@ -108,18 +108,18 @@ And brought back for the rest of the test. Meanwhile, watch Dupont during all of
 === test_long_text ===
 This is a long text with really a lot of words to see what happens when one single lines goes way above the normal length of a single sentence. I add another sentence afterward but on the same line to see what happens. I wonder if i can break stuff doing this. Ok i will switch line now. The line was not long enough to reach the end so I will continue. 
 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 1000014 1000015 1000016 1000017 1000018 1000019 1000020 1000021 1000022 1000023 1000024 1000025 1000026 1000027 1000028 1000029 1000030 1000031 1000032 1000033 1000034 1000035 1000036 1000037 1000038 1000039. 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 1000014 1000015 1000016 1000017 1000018 1000019 1000020 1000021 1000022 1000023 1000024 1000025 1000026 1000027 1000028 1000029 1000030 1000031 1000032 1000033 1000034 1000035 1000036 1000037 1000038 1000039. 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 1000014 1000015 1000016 1000017 1000018 1000019 1000020 1000021 1000022 1000023 1000024 1000025 1000026 1000027 1000028 1000029 1000030 1000031 1000032 1000033 1000034 1000035 1000036 1000037 1000038 1000039. 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 1000014 1000015 1000016 1000017 1000018 1000019 1000020 1000021 1000022 1000023 1000024 1000025 1000026 1000027 1000028 1000029 1000030 1000031 1000032 1000033 1000034 1000035 1000036 1000037 1000038 1000039. 1000001 1000002 1000003 1000004 1000005 1000006 1000007 1000008 1000009 1000010 1000011 1000012 1000013 1000014 1000015 1000016 1000017 1000018 1000019 1000020 1000021 1000022 1000023 1000024 1000025 1000026 1000027 1000028 1000029 1000030 1000031 1000032 1000033 1000034 1000035 1000036 1000037 1000038 1000039.
-Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggghhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrssssssssssssssssssssssssssssssssssssssssssssssssssssstttttttttttttttttttttttttttttttttttttttttttttt
-Horloge<page>
-Another line.<wait:click>
+Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggghhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiijjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrssssssssssssssssssssssssssssssssssssssssssssssssssssstttttttttttttttttttttttttttttttttttttttttttttt
+Horloge # page
+Another line. # wait:click
 A third line.
-A fourth line.<page>
+A fourth line. # page
 A fifth line.
 A sixth line.
 A seventh line.
-An eight line.<wait>
+An eight line.# wait:click
 A ninth line.
 etc...
--> test_choices
+--> test_choices
 
 === stage_test_end ===
 Test complete.

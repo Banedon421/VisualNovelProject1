@@ -41,6 +41,13 @@ public class NpcTemplateDefinition
     public string role;         // e.g. "blacksmith", "farmer"
     public string baseName;     // fallback for CharacterPlacement.displayName
     public string defaultSprite; // fallback for CharacterPlacement.sprite
+
+    // Optional TMP color string (e.g. "#E0A030FF" or a named color like
+    // "orange"), used by DialogueUIController's "<name:id>" inline
+    // command to auto-color this character's displayed name wherever
+    // it's used in dialogue, instead of hand-wrapping <color=...> around
+    // it in every line. Leave "" for a plain, uncolored name.
+    public string nameColor = "";
 }
 
 // A named on-screen spot, shared across every scene unless a specific
